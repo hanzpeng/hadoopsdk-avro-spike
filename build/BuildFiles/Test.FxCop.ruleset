@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="Default Test Code Analysis Rules"
+  Description="This rule set contains all rules, less those temporarily or permanently disabled."
+  ToolsVersion="10.0">
+   <IncludeAll Action="Warning" />
+   <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+
+      <!-- Production Rules -->
+      <!-- CA1004 - Microsoft.Design: Generic methods should provide type parameter -->
+      <Rule Id="CA1004" Action="None" />
+
+      <!-- CA1006 - Microsoft.Design: Do not nest generic types in member signatures -->
+      <Rule Id="CA1006" Action="None" />
+
+      <!-- CA1011 - Microsoft.Design: Consider passing base types as parameters -->
+      <Rule Id="CA1011" Action="None" />
+
+      <!-- CA1020 - Microsoft.Design: Avoid namespaces with few types -->
+      <Rule Id="CA1020" Action="None" />
+
+      <!-- CA1024 - Microsoft.Design: Use properties where appropriate -->
+      <Rule Id="CA1024" Action="None" />
+
+      <!-- CA1040 - Microsoft.Design: Avoid empty interfaces -->
+      <Rule Id="CA1040" Action="None" />
+
+      <!-- CA1500 - Variable names should not match field names -->
+      <Rule Id="CA1500" Action="None" />
+
+      <!-- CA1822 - Microsoft.Performance: Mark Members As Static -->
+      <Rule Id="CA1822" Action="None" />
+
+      <!-- CA2210 - Microsoft.Design: Assemblies should have valid strong names -->
+      <Rule Id="CA2210" Action="None" />
+
+	  <!-- CA2202 - Microsoft.Usage: Do not dispose of objects multiple times -->
+	  <!-- Turning off this rule because it is broken and serves no useful purpose -->
+	  <Rule Id="CA2202" Action="None" />
+	  
+      <!-- Test Rules -->
+      <!-- CA1005 - Microsoft.Design: Avoid excessive parameters on generic types -->
+      <Rule Id="CA1005" Action="None" />
+
+      <!-- CA1014 - Microsoft.Design: Mark assemblies with CLSCompliantAttribute -->
+      <Rule Id="CA1014" Action="None" />
+
+      <!-- CA1026 - Microsoft.Design: Default parameters should not be used -->
+      <Rule Id="CA1026" Action="None" />
+
+      <!-- CA1034 - Microsoft.Design: Nested types should not be visible -->
+      <Rule Id="CA1034" Action="None" />
+
+      <!-- CA1051 - Microsoft.Design: Do not declare visible instance fields -->
+      <Rule Id="CA1051" Action="None" />
+
+      <!-- CA1305 - Microsoft.Globalization: Specify IFormatProvider -->
+      <Rule Id="CA1305" Action="None" />
+
+      <!-- CA1501 - Microsoft.Maintainability: Avoid excessive inheritance -->
+      <Rule Id="CA1501" Action="None" />
+
+      <!-- CA1506 - Microsoft.Maintainability: Avoid excessive class coupling -->
+      <Rule Id="CA1506" Action="None" />
+
+      <!-- CA1702 - Microsoft.Naming: Compound words should be cased correctly -->
+      <Rule Id="CA1702" Action="None" />
+
+      <!-- CA1704 - Microsoft.Naming: Identifiers should be spelled correctly -->
+      <Rule Id="CA1704" Action="None" />
+
+      <!-- CA1707 - Microsoft.Naming: Identifiers should not contain underscores -->
+      <Rule Id="CA1707" Action="None" />
+
+      <!-- CA1709 - Microsoft.Naming: Identifiers should be cased correctly -->
+      <Rule Id="CA1709" Action="None" />
+
+      <!-- CA1720 - Microsoft.Naming: Identifiers should not contain type names -->
+      <Rule Id="CA1720" Action="None" />
+
+      <!-- CA1801 - Microsoft.Usage: Review unused parameters-->
+      <Rule Id="CA1801" Action="None" />
+
+      <!-- CA1804 - Microsoft.Performance: Remove unused locals -->
+      <Rule Id="CA1804" Action="None" />
+
+      <!-- CA1811 - Microsoft.Performance: Avoid uncalled private code -->
+      <Rule Id="CA1811" Action="None" />
+
+      <!-- CA1823 - Microsoft.Performance: Avoid unused private fields -->
+      <Rule Id="CA1823" Action="None" />
+
+      <!-- CA2122 - Microsoft.Security: Do not indirectly expose methods with link demands -->
+      <Rule Id="CA2122" Action="None" />
+
+      <!-- CA2211 - Microsoft.Usage: Non-constant fields should not be visible -->
+      <Rule Id="CA2211" Action="None" />
+	  
+	  <!-- CA1062 - Validate arguments of public methods -->
+	  <Rule Id="CA1062" Action="None" />
+	  
+	  <!-- CA1303 - Do not pass literals as localized parameters -->
+	  <Rule Id="CA1303" Action="None" />
+	  
+	  <!-- CA1307 - Specify String Comparision -->
+	  <Rule Id="CA1307" Action="None" />
+	  
+	  <!-- CA1812 - Avoid uninstantiated internal classes -->
+	  <Rule Id="CA1812" Action="None" />
+	  
+	  <!-- CA1031 - Do not catch general exception types -->
+	  <!-- Tests often need to catch general exception types to determin their type -->
+	  <Rule Id="CA1031" Action="None" />	  
+   </Rules>
+</RuleSet>

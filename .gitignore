@@ -1,0 +1,40 @@
+# Build Folders (you can keep bin if you'd like, to store dlls and pdbs)
+bin
+obj
+backup
+Logs
+Organized
+Packaged
+Prepared
+Debug
+Release
+Target
+Packages
+build.out
+
+#Temp folders
+Temp
+
+#Scenario Binaries
+Binaries
+
+# mstest test results
+TestResults
+
+# suo
+*.bak
+*.suo
+*.user
+*.nupkg
+UpgradeLog.xml
+_UpgradeReport_Files
+UpgradeLog.htm
+*.class
+*.jar
+
+# ncrunchfiles
+*.ncrunchsolution
+_NCrunch_Microsoft.Hadoop.WebClient
+
+# Auto-generated files
+Version.cs

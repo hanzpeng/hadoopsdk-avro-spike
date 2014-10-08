@@ -1,0 +1,18 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <Import Project="Project.Tests.targets" Condition="'$(TestProject)' == 'true'" />
+
+   <Import Project="NuGet.targets" />
+   
+    <ItemGroup>
+		<PackageSource Include="http://sc-eng-nuget/nuget" />
+    </ItemGroup>
+   
+   <Import Condition="Exists('$(EnlistmentPath)\Project.Post.targets')" Project="$(EnlistmentPath)\Project.Post.targets" />
+   <Import Condition="Exists('$(SolutionDir)\Project.Post.targets')" Project="$(SolutionDir)\Project.Post.targets" />
+   <Import Condition="Exists('$(MSBuildProjectDirectory)\Project.Post.targets')" Project="$(MSBuildProjectDirectory)\Project.Post.targets" />
+   
+   
+   <!-- Enable source analysis -->
+   <Import Project="Project.SourceAnalysis.targets"/>
+
+</Project>

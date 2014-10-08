@@ -1,0 +1,41 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <!-- Include the "Pre" targets -->
+   <Import Project="Project.CommonPre.targets" />
+
+   <Target Name="OfficialBuildSetup" Condition="'$(SignAssembly)'=='true'" BeforeTargets="BuildSetup">
+      <ItemGroup>
+         <Compile Remove="**\AssemblyInternalsVisibleTo.cs" />
+         <Compile Include="$(GenPath)\OfficialAssemblyInternalsVisibleTo.cs" Condition="'$(KeepInternal)' != 'true'"/>
+      </ItemGroup>
+   </Target>
+   
+	<!-- Setup StyleCop -->
+   <PropertyGroup>
+      <RunSourceAnalysis Condition="'RunSourceAnalysis' != ''">true</RunSourceAnalysis>
+		<SourceAnalysisOverrideSettingsFile>$(BuildFilesPath)\Settings.StyleCop</SourceAnalysisOverrideSettingsFile> 
+		<SourceAnalysisOverrideSettingsFile Condition="Exists('$(EnlistmentRoot)\Settings.StyleCop')">$(EnlistmentRoot)\Settings.StyleCop</SourceAnalysisOverrideSettingsFile>
+		<SourceAnalysisOverrideSettingsFile Condition="'$(SolutionDir)' != '' and '$(SolutionDir)' != '*Undefined*' and Exists('$(SolutionDir)\Settings.StyleCop')">$(SolutionDir)\Settings.StyleCop</SourceAnalysisOverrideSettingsFile>
+		<SourceAnalysisOverrideSettingsFile Condition="Exists('$(MSBuildProjectDirectory)\Settings.StyleCop')">$(MSBuildProjectDirectory)\Settings.StyleCop</SourceAnalysisOverrideSettingsFile>
+      <StyleCopForceFullAnalysis>true</StyleCopForceFullAnalysis>
+      <StyleCopCacheResults>false</StyleCopCacheResults>
+		<SourceAnalysisOutputFile>$(LogPath)\StyleCop\$(AssemblyName).StyleCopViolations.xml</SourceAnalysisOutputFile>
+   </PropertyGroup>
+
+	<Target Name="SetupSourceAnalysis" BeforeTargets="StyleCop">
+		<MakeDir Directories="$(LogPath)\StyleCop\" />
+	</Target>
+
+   <!-- Include the CSharp Targets -->
+   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+   <ItemGroup Condition="'$(OfficialBuild)' != 'true'">
+	  <Compile Include="$(BuildScriptRoot)\BuildFiles\BuildAssemblyVersion.cs" />
+   </ItemGroup>
+
+   <ItemGroup Condition="'$(OfficialBuild)' == 'true'">
+	  <Compile Include="$(GenPath)\Version.cs" />
+   </ItemGroup>
+   
+   <!-- Include the "Post" targets -->
+   <Import Project="Project.CommonPost.targets" />
+</Project>

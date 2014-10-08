@@ -1,0 +1,261 @@
+﻿<Project InitialTargets="BuildSetup" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <!-- 
+	   MSBuildAllProjects is used to specify all projects that this build is dependent on,
+	   this ensures that if this file changes it forces a rebuild 
+	-->
+   <PropertyGroup>
+      <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFile)</MSBuildAllProjects>
+   </PropertyGroup>
+ 
+   <!-- Determine if we are building from an IDE -->
+  <PropertyGroup>
+      <!-- Visual Studio IDE -->
+      <INVS Condition="'$(BuildingInsideVisualStudio)' == 'true' and '$(SharpDevelopBinPath)' == ''">true</INVS>
+      <!-- Sharp Develop IDE -->
+      <INSD Condition="'$(BuildingInsideVisualStudio)' == 'true' and '$(SharpDevelopBinPath)' != ''">true</INSD>
+      <INIDE Condition="'$(INVS)' == 'true' or '$(INSD)' == 'true'">true</INIDE>
+      <DefineConstants Condition="'$(INVS)' == 'true'">$(DefineConstants);INVS</DefineConstants>
+      <DefineConstants Condition="'$(INSD)' == 'true'">$(DefineConstants);INSD</DefineConstants>
+      <DefineConstants Condition="'$(INIDE)' == 'true'">$(DefineConstants);INIDE</DefineConstants>
+      <VSVERSION Condition="'$(VisualStudioVersion)' == '10.0'">VS2010</VSVERSION>
+      <VSVERSION Condition="'$(VisualStudioVersion)' == '11.0'">VS2012</VSVERSION>
+   </PropertyGroup>
+	  
+	<PropertyGroup >
+		<SourceAnalysisTreatErrorsAsWarnings>true</SourceAnalysisTreatErrorsAsWarnings>
+   </PropertyGroup>
+
+   <!-- Automatically bring in external references -->
+   <Target AfterTargets="BuildSetup" Name="ImportExternalAssemblies">
+		<Message Importance="High" Text="Bringing in external dependences" />
+		<ItemGroup Condition="EXISTS('$(EnlistmentPath)\external\$(Configuration)')">
+			<ExternalReferenceFiles Include="$(EnlistmentPath)\external\$(Configuration)\**\*.*" Exclude="$(EnlistmentPath)\external\$(Configuration)\**\*.pdb" />
+		</ItemGroup>
+		
+		<GetAssemblyIdentity AssemblyFiles="@(ExternalReferenceFiles)">
+			<Output TaskParameter="Assemblies" ItemName="ExternalAssemblyReferences" />
+		</GetAssemblyIdentity>
+		
+		<MergeIdentities Files="@(ExternalReferenceFiles)" Identities="@(ExternalAssemblyReferences)">
+			<Output TaskParameter="Results" ItemName="ExternalAssemblyIdentities" />
+		</MergeIdentities>
+		
+		<Message Importance="high" Text="Importing External Assembly Identity: %(ExternalAssemblyIdentities.AssemblyIdentity) : %(ExternalAssemblyIdentities.FullPath)" />
+		
+		<ItemGroup>
+			<Reference Include="%(ExternalAssemblyIdentities.AssemblyIdentity)" >
+				<HintPath>%(ExternalAssemblyIdentities.FullPath)</HintPath>
+			</Reference>
+		</ItemGroup>
+   </Target>
+   
+   <!-- Turn overflow/underflow checking on -->
+   <PropertyGroup>
+      <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+   </PropertyGroup>
+
+	<Target Name="BuildSetup">
+      <MakeDir Condition="!Exists('$(IntermediateOutputPath)')" Directories="$(IntermediateOutputPath)"/>
+    </Target>
+
+   <!-- Default project settings for all projects. -->
+   <PropertyGroup>
+	<!-- If no Configuration/Patform was specified, default to Debug/AnyCPU -->
+      <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+      <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+      <FileAlignment>512</FileAlignment>
+      <AppDesignerFolder>Properties</AppDesignerFolder>
+      <!-- Note: CODE_ANALYSIS is defined in Project.SourceAnalysis.Targets -->
+      <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+	  <ErrorReport>prompt</ErrorReport>
+      <WarningLevel>4</WarningLevel>
+	  <ConfigurationType>$(Configuration)</ConfigurationType>
+
+	  <RestorePackages>true</RestorePackages>
+
+      <!-- set up defaults for stylecop/fxcop-->
+      <RunCodeAnalysis Condition="'RunCodeAnalysis' != ''">true</RunCodeAnalysis>
+      <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+	  <CodeAnalysisTreatWarningsAsErrors Condition="'$(INIDE)' == 'true'">false</CodeAnalysisTreatWarningsAsErrors>
+      <CodeAnalysisFailOnMissingRules>true</CodeAnalysisFailOnMissingRules>
+
+      <!-- get clean, stay clean with compiler warnings -->
+	  <TreatWarningsAsErrors Condition="'$(INIDE)' != 'true'">true</TreatWarningsAsErrors>
+   </PropertyGroup>
+
+   <!-- Provide config for debug Any CPU -->
+	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+	  <ConfigurationType>Debug</ConfigurationType>
+      <DebugSymbols>true</DebugSymbols>
+      <DebugType>full</DebugType>
+      <Optimize>false</Optimize>
+      <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+   </PropertyGroup>
+
+   <!-- Provide config for release Any CPU -->
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+	  <ConfigurationType>Release</ConfigurationType>
+      <DebugType>pdbonly</DebugType>
+      <Optimize>true</Optimize>
+   </PropertyGroup>
+   
+   <!-- Bring in the common properties -->
+   <Import Project="Shared.Common.Properties.targets" />
+   
+   <!-- Import useful Build tasks -->
+    <Import Project="Shared.Common.Tasks.targets" />
+   
+    <!-- Override NuGet Properties -->
+	<PropertyGroup>
+		<DownloadNuGetExe>true</DownloadNuGetExe>
+		<NuGetToolsPath>$(ProjectBuildToolsPath)\NuGet</NuGetToolsPath>
+		<RequireRestoreConsent>false</RequireRestoreConsent>
+	</PropertyGroup>
+   
+   <!-- Set a flag to determine if this is a test project -->
+   <PropertyGroup Condition="'$(TestProject)' == ''" >
+      <TestProject>false</TestProject>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(ProjectTypeGuids)' != '' and $(ProjectTypeGuids.Contains('3AC096D0-A1C2-E12C-1390-A8335801FDAB'))">
+      <TestProject>true</TestProject>
+   </PropertyGroup>
+   
+   <PropertyGroup Condition="'$(TestProject)' != 'true' and '$(SampleProject)' != 'true'" >
+      <ProductionProject>true</ProductionProject>
+	  <DocumentationFile Condition="'$(OfficialBuild)' == 'true'">$(LogPath)\Docs\$(AssemblyName).XML</DocumentationFile>
+   </PropertyGroup>
+   
+   <Target Name="MoveDocumentationFiles"
+           AfterTargets="CoreCompile"
+		   Condition="'$(OfficialBuild)' == 'true' and '$(TestProject)' != 'true' and '$(SampleProject)' != 'true'">
+		<Copy SourceFiles="$(LogPath)\Docs\$(AssemblyName).XML" DestinationFolder="$(OutDir)" />
+	</Target>
+   
+   <PropertyGroup>
+      <EmbeddedResourceManifestFile>$(GenPath)\$(MSBuildProjectFile).embedded-resource.map</EmbeddedResourceManifestFile>
+      <TestResourceManifestFile>$(GenPath)\$(MSBuildProjectFile).test-resource.list</TestResourceManifestFile>
+   </PropertyGroup>
+   
+   <Target Name="CleanEmbeddedResourceMap"
+           BeforeTargets="CoreClean">
+      <Delete Files="$(EmbeddedResourceManifestFile)" />
+      <WriteLinesToFile File="$(EmbeddedResourceManifestFile)"
+                        Lines="Embedded Resources located in this assembly relative to: $(MSBuildProjectDirectory)"/>
+   </Target>
+
+   <Target Name="CreateEmbeddedResourceMap"
+           AfterTargets="BuildSetup"
+           Inputs="@(EmbeddedResource)"
+           Outputs="@(IntermediateAssembly)">
+      <Message Text="CreateEmbeddedResourceMap" />
+      <Delete Files="$(EmbeddedResourceManifestFile)" />
+      <WriteLinesToFile File="$(EmbeddedResourceManifestFile)"
+                        Lines="Embedded Resources located in this assembly relative to: $(MSBuildProjectDirectory)"/>
+      <ItemGroup>
+         <EmbeddedResource Include="$(EmbeddedResourceManifestFile)" />
+      </ItemGroup>
+   </Target>
+
+   <Target Name="PushEmbeddedResourceMap"
+           AfterTargets="CreateManifestResourceNames"
+           Inputs="@(EmbeddedResource)"
+           Outputs="@(IntermediateAssembly)">
+      <Message Text="PushEmbeddedResourceMap" />
+      <Delete Files="$(EmbeddedResourceManifestFile)" />
+      <WriteLinesToFile File="$(EmbeddedResourceManifestFile)"
+                        Lines="Embedded Resources located in this assembly relative to: $(MSBuildProjectDirectory)"/>
+      <WriteLinesToFile File="$(EmbeddedResourceManifestFile)"
+                        Lines="%(EmbeddedResource.ManifestResourceName)|%(EmbeddedResource.fullpath)" />
+   </Target>
+                                
+
+   <!-- Override the FxCop Rules and RuleSets to team standard -->
+   <PropertyGroup>
+      <CodeAnalysisRuleSet>$(LogPath)\FxCop\$(AssemblyName).ruleset</CodeAnalysisRuleSet>
+	  
+	  
+      <MasterRuleSet>$(BuildFilesPath)\Production.FxCop.ruleset</MasterRuleSet>
+      <MasterRuleSet Condition="'$(TestProject)' == 'true'">$(BuildFilesPath)\Test.FxCop.ruleset</MasterRuleSet>
+      <MasterRuleSet Condition="'$(SampleProject)' == 'true'">$(BuildFilesPath)\Sample.FxCop.ruleset</MasterRuleSet>
+	  
+	  <SolutionRuleSet>$(EnlistmentPath)\Solution.FxCop.ruleset</SolutionRuleSet>
+	  <SolutionRuleSet Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">$(SolutionDir)\Solution.FxCop.ruleset</SolutionRuleSet>
+	  <ProjectRuleSet>$(MSBuildProjectDirectory)\Project.FxCop.ruleset</ProjectRuleSet>
+	  
+      <CodeAnalysisRuleDirectories>$(ProjectBuildToolsPath)\FxCop\SDLRules\$(VSVERSION)</CodeAnalysisRuleDirectories>
+      <!-- <CodeAnalysisRuleDirectories Condition="'$(VSVERSION)' == 'VS2012'">$(ProjectBuildToolsPath)\FxCop\PowerShellRules\$(VSVERSION)</CodeAnalysisRuleDirectories> -->
+	  <CodeAnalysisLogFile>$(LogPath)\FxCop\$(AssemblyName).CodeAnalysisLog.xml</CodeAnalysisLogFile>
+   </PropertyGroup>
+   
+   <ItemGroup>
+      <CodeAnalysisDictionary Include="$(BuildFilesPath)\FxCopCustomDictionary.xml" />
+      <CodeAnalysisDictionary Condition="Exists('$(SolutionPath)\FxCopCustomDictionary.xml')" Include="$(SolutionPath)\FxCopCustomDictionary.xml" />
+      <CodeAnalysisDictionary Condition="Exists('$(ProjectDir)\..\FxCopCustomDictionary.xml')" Include="$(ProjectDir)\..\FxCopCustomDictionary.xml" />
+      <CodeAnalysisDictionary Condition="Exists('$(ProjectDir)\FxCopCustomDictionary.xml')" Include="$(ProjectDir)\FxCopCustomDictionary.xml" />
+   </ItemGroup>
+
+   <Target Name="SetupCodeAnalysisSettings" BeforeTargets="RunCodeAnalysis">
+      <Message Text=
+"Code Analysis Rule Set: $(CodeAnalysisRuleSet)
+Code Analysis Rule Dirs: $(CodeAnalysisRuleDirectories)" />
+      <MergeFxCopRuleSets MasterRuleSet="$(MasterRuleSet)"
+	                      SolutionRuleSet="$(SolutionRuleSet)"
+						  ProjectRuleSet="$(ProjectRuleSet)"
+						  OutputRuleSet="$(CodeAnalysisRuleSet)" />
+   </Target>
+
+
+   <!-- Set defaults regardless of config -->
+   <PropertyGroup>
+      <RunCatNet>false</RunCatNet>
+      <!--
+        [tgs] We haven't solved versioning or CodeSigning yet.
+        <LightweightBuildVersioning>true</LightweightBuildVersioning>
+        <LightweightBuildTestSigning>true</LightweightBuildTestSigning>
+        <LightweightBuildDelaySigning>false</LightweightBuildDelaySigning>
+    -->
+      <!--    <UseHostCompilerIfAvailable>false</UseHostCompilerIfAvailable> -->
+   </PropertyGroup>
+
+   <!-- Provide config for coverage Any CPU -->
+   <!-- [tgs] I hear you micheal... I still don't believe we can't DRY this out -->
+   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Coverage|AnyCPU' ">
+      <DebugType>pdbonly</DebugType>
+      <Optimize>true</Optimize>
+      <!-- Set PlatformTarget to x86 to keep instrumentation tools from giving us warnings -->
+      <PlatformTarget>x86</PlatformTarget>
+      <ErrorReport>prompt</ErrorReport>
+      <WarningLevel>4</WarningLevel>
+   </PropertyGroup>
+
+   <Import Condition="Exists('$(EnlistmentPath)\Project.Pre.targets')" Project="$(EnlistmentPath)\Project.Pre.targets" />
+   <Import Condition="Exists('$(SolutionDir)\Project.Pre.targets')" Project="$(SolutionDir)\Project.Pre.targets" />
+   <Import Condition="Exists('$(MSBuildProjectDirectory)\Project.Pre.targets')" Project="$(MSBuildProjectDirectory)\Project.Pre.targets" />
+   
+	<Target Name="WriteProjectTypeFile"
+	        AfterTargets="Build">
+		<MakeDir Condition="!Exists('$(ProjectTypeFilePath)')" Directories="$(ProjectTypeFilePath)" />
+		<Delete Files="$(ProjectTypeFilePath)\$(AssemblyName).*" />
+		<Message Condition="'$(TestProject)' == 'true'" 
+				 Text="Writing Project Type File: $(ProjectTypeFilePath)\$(AssemblyName).test : $(OutDir)%(IntermediateAssembly.FileName)%(IntermediateAssembly.Extension)" />
+		<WriteLinesToFile Condition="'$(TestProject)' == 'true'" 
+		                  File="$(ProjectTypeFilePath)\$(AssemblyName).test"
+						  Lines="$(OutDir)%(IntermediateAssembly.FileName)%(IntermediateAssembly.Extension)"
+						  Overwrite="true"
+                          Encoding="Utf-8" />
+		<Message Condition="'$(SampleProject)' == 'true'" 
+				 Text="Writing Project Type File: $(ProjectTypeFilePath)\$(AssemblyName).sample : $(OutDir)%(IntermediateAssembly.FileName)%(IntermediateAssembly.Extension)" />
+		<WriteLinesToFile Condition="'$(SampleProject)' == 'true'" 
+		                  File="$(ProjectTypeFilePath)\$(AssemblyName).sample"
+						  Lines="$(OutDir)%(IntermediateAssembly.FileName)%(IntermediateAssembly.Extension)"
+						  Overwrite="true"
+                          Encoding="Utf-8" />
+		<Message Condition="'$(TestProject)' != 'true' and '$(SampleProject)' != 'true'" 
+				 Text="Writing Project Type File: $(ProjectTypeFilePath)\$(AssemblyName).core : $(OutDir)%(IntermediateAssembly.FileName)%(IntermediateAssembly.Extension)" />
+		<WriteLinesToFile Condition="'$(TestProject)' != 'true' and '$(SampleProject)' != 'true'" 
+		                  File="$(ProjectTypeFilePath)\$(AssemblyName).core"
+						  Lines="$(OutDir)%(IntermediateAssembly.FileName)%(IntermediateAssembly.Extension)"
+						  Overwrite="true"
+                          Encoding="Utf-8" />
+	</Target>
+</Project>
