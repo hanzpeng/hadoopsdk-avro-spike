@@ -16,12 +16,111 @@ namespace Microsoft.Hadoop.Avro.Container
 {
     using System;
     using System.IO;
+    using System.Collections.Generic;
+    using System.Linq;
 
     /// <summary>
     /// Represents a factory for Avro file object containers.
     /// </summary>
     public static class AvroContainer
     {
+        /// <summary>
+        /// Retrieve Avro Hearder from a stream
+        /// </summary>
+        /// <param name="avroStream">The stream that contains the avro header</param>
+        /// <returns>Avro Header Object</returns>
+        public static ObjectContainerHeader GetAvroHeader<TSchema>(Stream avroStream)
+        {
+            ObjectContainerHeader avroHeader = null;
+
+            avroStream.Seek(0, SeekOrigin.Begin);
+            using (var decoder = new BinaryDecoder(avroStream, true))
+            {
+                avroHeader = ObjectContainerHeader.Read(decoder);
+            }
+            avroStream.Dispose();
+            return avroHeader;
+        }
+
+
+        /// <summary>
+        /// Creates Avro Hearder Stream without zero block.
+        /// </summary>
+        /// <param name="dataList">the list of input data</param>
+        /// <param name="schema">The writer schema.</param>
+        /// <param name="settings">The serializer settings.</param>
+        /// <param name="codec">The codec.</param>
+        /// <returns> A writer.</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown when any argument is null.</exception>
+        /// <returns>The first Tuple element is the stream with header, the second tuple element is the avro header</returns>
+        public static Tuple<Stream, ObjectContainerHeader> CreateAvroHeaderStream<TSchema>(TSchema t, string schema, AvroSerializerSettings settings, Codec codec, int syncNumberOfObjects)
+        {
+            ObjectContainerHeader avroHeader = null;
+            var stream = new MemoryStream();
+            using (var avroWriter = (StreamWriter<TSchema>)AvroContainer.CreateWriter<TSchema>(stream, true, settings, codec, false, null))
+            {
+                avroWriter.WriteHeader();
+                avroHeader = avroWriter.Header;
+            }
+            stream.Seek(0, SeekOrigin.Begin);
+            return new Tuple<Stream, ObjectContainerHeader>(stream, avroHeader);
+        }
+
+        /// <summary>
+        /// Creates Avro Blocks stream.
+        /// </summary>
+        /// <param name="dataList">the list of input data</param>
+        /// <param name="schema">The writer schema.</param>
+        /// <param name="settings">The serializer settings.</param>
+        /// <param name="codec">The codec.</param>
+        /// <returns> A writer.</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown when any argument is null.</exception>
+        /// <returns>The first Tuple element is the stream with header and blocks, the second tuple element is the avro header</returns>
+        public static Tuple<Stream, ObjectContainerHeader> CreateAvroHeaderAndBlockStream<TSchema>(List<TSchema> dataList, string schema, AvroSerializerSettings settings, Codec codec, int syncNumberOfObjects)
+        {
+            ObjectContainerHeader avroHeader = null;
+            var stream = new MemoryStream();
+            using (var avroWriter = (StreamWriter<TSchema>)AvroContainer.CreateWriter<TSchema>(stream, true, settings, codec, false, null))
+            {
+                avroHeader = avroWriter.Header;
+
+                using (var sequentialWriter = new SequentialWriter<TSchema>(avroWriter, syncNumberOfObjects))
+                {
+                    dataList.ToList().ForEach(sequentialWriter.Write);
+                }
+            }
+            stream.Seek(0, SeekOrigin.Begin);
+            return new Tuple<Stream, ObjectContainerHeader>(stream, avroHeader);
+        }
+
+        /// <summary>
+        /// Creates Avro Blocks and Avro Hearder.
+        /// </summary>
+        /// <param name="syncMarker">the syncMarker for the existing avro blocks</param>
+        /// <param name="dataList">the list of input data</param>
+        /// <param name="schema">The writer schema.</param>
+        /// <param name="settings">The serializer settings.</param>
+        /// <param name="codec">The codec.</param>
+        /// <returns> A writer.</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown when any argument is null.</exception>
+        /// <returns>the stream is serialzied bytes of avro blocks</returns>
+        public static Stream CreateAvroBlockStream<TSchema>(byte[] syncMarker, List<TSchema> dataList, string schema, AvroSerializerSettings settings, Codec codec, int syncNumberOfObjects)
+        {
+            ObjectContainerHeader avroHeader = null;
+            var stream = new MemoryStream();
+            using (var avroWriter = (StreamWriter<TSchema>)AvroContainer.CreateWriter<TSchema>(stream, true, settings, codec, true, syncMarker))
+            {
+                avroHeader = avroWriter.Header;
+
+                using (var sequentialWriter = new SequentialWriter<TSchema>(avroWriter, syncNumberOfObjects))
+                {
+                    dataList.ToList().ForEach(sequentialWriter.Write);
+                }
+            }
+            stream.Seek(0, SeekOrigin.Begin);
+            return stream;
+        }
+
         /// <summary>
         /// Creates a reader of <see cref="Microsoft.Hadoop.Avro.AvroRecord"/> or primitive type.
         /// </summary>
@@ -185,7 +284,7 @@ namespace Microsoft.Hadoop.Avro.Container
         /// <param name="codec">The codec.</param>
         /// <returns> A writer. </returns>
         /// <exception cref="System.ArgumentNullException">Thrown when any argument is null.</exception>
-        public static IAvroWriter<T> CreateWriter<T>(Stream stream, bool leaveOpen, AvroSerializerSettings settings, Codec codec)
+        public static IAvroWriter<T> CreateWriter<T>(Stream stream, bool leaveOpen, AvroSerializerSettings settings, Codec codec, bool isHeaderWritten = false, byte[] syncMarker = null)
         {
             if (stream == null)
             {
@@ -199,7 +298,7 @@ namespace Microsoft.Hadoop.Avro.Container
             {
                 throw new ArgumentNullException("codec");
             }
-            return new StreamWriter<T>(stream, leaveOpen, AvroSerializer.Create<T>(settings), codec);
+            return new StreamWriter<T>(stream, leaveOpen, AvroSerializer.Create<T>(settings), codec, isHeaderWritten, syncMarker);
         }
 
         /// <summary>

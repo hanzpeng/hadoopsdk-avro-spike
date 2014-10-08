@@ -25,7 +25,7 @@ namespace Microsoft.Hadoop.Avro.Container
     /// <summary>
     ///     Represents a header of the object container.
     /// </summary>
-    internal sealed class ObjectContainerHeader
+    public class ObjectContainerHeader
     {
         private const string MetadataSchema = "avro.schema";
         private const string MetadataCodec = "avro.codec";

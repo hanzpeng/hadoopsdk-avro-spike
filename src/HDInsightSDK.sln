@@ -19,7 +19,6 @@ Global
 		{EAB38A14-211F-4361-A06E-3EC1E07ABE33}.Coverage|Any CPU.ActiveCfg = Coverage|Any CPU
 		{EAB38A14-211F-4361-A06E-3EC1E07ABE33}.Coverage|Any CPU.Build.0 = Coverage|Any CPU
 		{EAB38A14-211F-4361-A06E-3EC1E07ABE33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EAB38A14-211F-4361-A06E-3EC1E07ABE33}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAB38A14-211F-4361-A06E-3EC1E07ABE33}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAB38A14-211F-4361-A06E-3EC1E07ABE33}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection

@@ -24,7 +24,7 @@ namespace Microsoft.Hadoop.Avro.Container
     /// Represents a stream Avro writer.
     /// </summary>
     /// <typeparam name="T">The type of Avro objects to be written into the output stream.</typeparam>
-    internal sealed class StreamWriter<T> : IAvroWriter<T>
+    public class StreamWriter<T> : IAvroWriter<T>
     {
         private readonly IEncoder encoder;
         private readonly IAvroSerializer<T> serializer;
@@ -33,8 +33,41 @@ namespace Microsoft.Hadoop.Avro.Container
         private readonly ObjectContainerHeader header;
         private readonly object locker;
         private volatile bool isHeaderWritten;
+        public ObjectContainerHeader Header
+        {
+            get
+            {
+                return this.header;
+            }
+        }
+        public long WriteHeader()
+        {
+            return this.WriteHeaderAsync().Result;
+        }
 
-        public StreamWriter(Stream stream, bool leaveOpen, IAvroSerializer<T> serializer, Codec codec)
+        public Task<long> WriteHeaderAsync()
+        {
+            var taskSource = new TaskCompletionSource<long>();
+
+            long result;
+            lock (this.locker)
+            {
+                if (!this.isHeaderWritten)
+                {
+                    this.header.Write(this.encoder);
+                    this.isHeaderWritten = true;
+                }
+
+                result = this.resultStream.Position;
+            }
+
+            taskSource.SetResult(result);
+            return taskSource.Task;
+        }
+
+        //public StreamWriter(byte[] syncMarker, Stream stream, IAvroSerializer<T> serializer, Codec codec)
+
+        public StreamWriter(Stream stream, bool leaveOpen, IAvroSerializer<T> serializer, Codec codec, bool isHeaderWritten = false, byte[] syncMarker = null)
         {
             if (stream == null)
             {
@@ -51,15 +84,29 @@ namespace Microsoft.Hadoop.Avro.Container
                 throw new ArgumentNullException("codec");
             }
 
+            this.isHeaderWritten = isHeaderWritten;
+            if (isHeaderWritten == true)
+            {
+                if (syncMarker == null)
+                {
+                    throw new ArgumentNullException("syncMarker");
+                }
+                else if (syncMarker.Length != 16)
+                {
+                    throw new ArgumentException("syncMarker must 16 bytes", "syncMarker");
+                }
+            }
+            else
+            {
+                syncMarker = new byte[16];
+                new Random().NextBytes(syncMarker);
+            }
+
             this.codec = codec;
             this.serializer = serializer;
             this.resultStream = stream;
             this.encoder = new BinaryEncoder(this.resultStream, leaveOpen);
-            this.isHeaderWritten = false;
             this.locker = new object();
-
-            var syncMarker = new byte[16];
-            new Random().NextBytes(syncMarker);
             this.header = new ObjectContainerHeader(syncMarker) { CodecName = this.codec.Name, Schema = this.serializer.WriterSchema.ToString() };
         }
 
